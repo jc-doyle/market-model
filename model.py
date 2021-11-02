@@ -12,11 +12,11 @@ from agent import Type
 
 
 class MarketModel(Model):
-    def __init__(self, agents, price):
+    def __init__(self, agents, price, alpha):
         self.num_agents = agents
         self.schedule = SimultaneousActivation(self)
         self.grid = MultiGrid(10, 10, True)
-        self.market = Market(price)
+        self.market = Market(price, alpha)
         self.running = True
 
         # Initialize Agents
@@ -25,9 +25,9 @@ class MarketModel(Model):
 
         for id in range(self.num_agents):
             wealth = pow.rvs()
-            if id < 2:
+            if id < (self.num_agents * 0.7 / 2):
                 a = Agent(id, self, Type.OPTIMIST, wealth)
-            elif id < 4:
+            elif id < (self.num_agents * 0.7):
                 a = Agent(id, self, Type.PESSIMIST, wealth)
             else:
                 a = Agent(id, self, Type.RANDOM, wealth)
@@ -48,15 +48,14 @@ class MarketModel(Model):
                 "Type": "type",
                 "Wealth": "wealth",
                 "Price": "current_price",
-                "Expectation": "exp",
+                "Expectation": "expected_price",
                 "Horizon": "horizon",
                 "Action": "action",
-                "Optimist": "optimist",
-                "Optimist": "pessimist",
+                "Previous Return": "previous_return",
             },
         )
 
     def step(self):
-        self.schedule.step()
         self.market.update()
+        self.schedule.step()
         self.data.collect(self)

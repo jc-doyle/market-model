@@ -15,8 +15,8 @@ class Order:
         self.type = type
 
 class Market:
-    def __init__(self, init_price) -> None:
-        self.ALPHA = 0.008
+    def __init__(self, init_price, alpha) -> None:
+        self.ALPHA = alpha
 
         self.current_price = init_price
         self.hist_price = [self.current_price]
@@ -29,7 +29,7 @@ class Market:
         self.current_price = (
             self.current_price
             + self.ALPHA * (excess_demand) / 2
-            + random.gauss(0, self.ALPHA)
+             # + random.gauss(0, self.ALPHA)
         )
 
         self.hist_price.append(self.current_price)
