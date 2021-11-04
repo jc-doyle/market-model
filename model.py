@@ -3,8 +3,7 @@ from mesa.time import SimultaneousActivation
 from mesa.datacollection import DataCollector
 from mesa.space import MultiGrid
 
-from scipy import stats
-from scipy.stats import powerlaw
+import networkx as nx
 
 from market import Market
 from agent import Agent
@@ -12,25 +11,23 @@ from agent import Type
 
 
 class MarketModel(Model):
-    def __init__(self, agents, price, alpha):
+    def __init__(self, agents, non_random, price, alpha, beta, gamma, rho, network):
         self.num_agents = agents
+        self.non_random = non_random
         self.schedule = SimultaneousActivation(self)
         self.grid = MultiGrid(10, 10, True)
         self.market = Market(price, alpha)
         self.running = True
+        self.network = self.create_network(network)
 
         # Initialize Agents
-        a = 1.5
-        pow = powerlaw(a, scale=70, loc=30)
-
         for id in range(self.num_agents):
-            wealth = pow.rvs()
-            if id < (self.num_agents * 0.7 / 2):
-                a = Agent(id, self, Type.OPTIMIST, wealth)
-            elif id < (self.num_agents * 0.7):
-                a = Agent(id, self, Type.PESSIMIST, wealth)
+            if id < (self.num_agents * self.non_random / 2):
+                a = Agent(id, self, Type.OPTIMIST, beta, gamma, rho)
+            elif id < (self.num_agents * self.non_random):
+                a = Agent(id, self, Type.PESSIMIST, beta, gamma, rho)
             else:
-                a = Agent(id, self, Type.RANDOM, wealth)
+                a = Agent(id, self, Type.RANDOM, beta, gamma, rho)
 
             self.schedule.add(a)
             x = self.random.randrange(self.grid.width)
@@ -45,15 +42,35 @@ class MarketModel(Model):
                 "Offers": lambda m: len(m.market.executed_offers),
             },
             agent_reporters={
-                "Type": "type",
-                "Wealth": "wealth",
-                "Price": "current_price",
-                "Expectation": "expected_price",
+                "Trading Type": "type.name",
                 "Horizon": "horizon",
                 "Action": "action",
+                "Price": "current_price",
+                "Expectation": "expected_price",
+                "Exp Return": "expected_return",
+                "Fitness": "strategy_fitness",
                 "Previous Return": "previous_return",
+                "opt": "optimist_mean",
+                "pess": "pessimist_mean",
+                "prob": "opt_prob",
+                "rng": "rng",
             },
         )
+
+    def create_network(self, input):
+        n = int(self.num_agents * self.non_random)
+        if input[0].lower() == "regular" or input[0].lower() == "random":
+            return nx.random_regular_graph(input[1], n)
+        elif input[0].lower() == "scalefree":
+            return nx.powerlaw_cluster_graph(n, input[1], input[2])
+        elif input[0].lower() == "smallworld":
+            return nx.powerlaw_cluster_graph(n, input[1], input[2])
+        elif input[0].lower() == "barabasi":
+            return nx.barabasi_albert_graph(n, input[1])
+        elif input[0].lower() == "caveman":
+            return nx.caveman_graph(input[1], input[2])
+        elif input[0].lower() == "none":
+            return nx.random_regular_graph(0, n)
 
     def step(self):
         self.market.update()

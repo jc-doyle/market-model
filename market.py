@@ -1,13 +1,10 @@
-import random
 import pandas as pd
 from enum import Enum
-
 
 class Action(Enum):
     BID = 0
     OFFER = 1
     NOTHING = 2
-
 
 class Order:
     def __init__(self, id: int, type: Action):
@@ -17,7 +14,6 @@ class Order:
 class Market:
     def __init__(self, init_price, alpha) -> None:
         self.ALPHA = alpha
-
         self.current_price = init_price
         self.hist_price = [self.current_price]
         self.executed_bids = []
