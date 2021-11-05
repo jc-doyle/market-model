@@ -11,13 +11,16 @@ from agent import Type
 
 
 class MarketModel(Model):
-    def __init__(self, agents, non_random, price, alpha, beta, gamma, rho, network):
+    def __init__(
+        self, agents, non_random, price, alpha, beta, gamma, rho, network, convergence
+    ):
         self.num_agents = agents
         self.non_random = non_random
         self.schedule = SimultaneousActivation(self)
         self.grid = MultiGrid(10, 10, True)
         self.market = Market(price, alpha)
         self.running = True
+        self.convergence = convergence
         self.network = self.create_network(network)
 
         # Initialize Agents
@@ -57,6 +60,12 @@ class MarketModel(Model):
             },
         )
 
+        self.test = DataCollector(
+            agent_reporters={
+                "Price-test": "price_test",
+            },
+        )
+
     def create_network(self, input):
         n = int(self.num_agents * self.non_random)
         if input[0].lower() == "regular" or input[0].lower() == "random":
@@ -76,3 +85,5 @@ class MarketModel(Model):
         self.market.update()
         self.schedule.step()
         self.data.collect(self)
+        self.test.collect(self)
+        self.market.data = self.data.get_agent_vars_dataframe()

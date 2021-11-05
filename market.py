@@ -18,6 +18,7 @@ class Market:
         self.hist_price = [self.current_price]
         self.executed_bids = []
         self.executed_offers = []
+        self.data = None
 
     def update(self):
         # Determine Price for t+1

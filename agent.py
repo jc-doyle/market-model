@@ -41,6 +41,10 @@ class Agent(Agent):
         return self.market.hist_price[-2]
 
     @property
+    def price_test(self):
+        return self.market.data.xs(self.unique_id, level=1)[-1:]['Price'].values[0]
+
+    @property
     def expected_return(self):
         if self.optimist:
             return self.expected_price - self.current_price
@@ -76,14 +80,14 @@ class Agent(Agent):
             return False
 
     def generate_expectation(self):
-        react_coeff = random.uniform(0, 1)
+        reeact_coeff = random.gauss(0.5, 0.1)
         price_sma = self.market.sma(self.horizon)
         expected_change = self.current_price - price_sma
 
         if self.optimist:
-            expected_price = self.current_price + react_coeff * (expected_change)
+            expected_price = self.current_price + reeact_coeff * (expected_change)
         else:
-            expected_price = self.current_price - react_coeff * (expected_change)
+            expected_price = self.current_price - 2*reeact_coeff * (expected_change)
 
         self.expected_price = expected_price + random.gauss(0, self.beta)
 
@@ -110,13 +114,19 @@ class Agent(Agent):
         self.market.order(order)
 
     def compare_strategy(self):
+        self.optimist_max_horizon = 0
+        self.pessimist_max_horizon = 0
         self.optimist_fitness = []
         self.pessimist_fitness = []
         for other_id in self.model.network[self.unique_id]:
             other = self.model.schedule.agents[other_id]
             if other.pessimist:
+                if other.strategy_fitness > self.pessimist_max_horizon:
+                    self.pessimist_max_horizon = other.horizon
                 self.pessimist_fitness.append(other.strategy_fitness)
             elif other.optimist:
+                if other.strategy_fitness > self.optimist_max_horizon:
+                    self.optimist_max_horizon = other.horizon
                 self.optimist_fitness.append(other.strategy_fitness)
 
         # Mean fitness of neighbours
@@ -142,8 +152,12 @@ class Agent(Agent):
         if not (self.pessimist_fitness == [] and self.optimist_fitness == []):
             if self.opt_prob > self.rng:
                 self.type = Type.OPTIMIST
+                if self.model.convergence and self.optimist_max_horizon > 0:
+                    self.horizon = self.optimist_max_horizon
             else:
                 self.type = Type.PESSIMIST
+                if self.model.convergence and self.pessimist_max_horizon > 0:
+                    self.horizon = self.pessimist_max_horizon
 
     def step(self):
         # To account for the 1st time-step
