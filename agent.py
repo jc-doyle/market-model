@@ -156,7 +156,6 @@ class MarketAgent(Agent):
         else:
             self.pessimist_mean = 0
 
-                
     def transact(self):
         self.generate_expectation()
         self.generate_action()
@@ -164,7 +163,6 @@ class MarketAgent(Agent):
 
     def switch(self):
         self.types[self.time] = self.types[self.time-1]
-
 
         if not ((self.random) or (self.neighbours == [])):
             if self.type == Type.OPTIMIST:
